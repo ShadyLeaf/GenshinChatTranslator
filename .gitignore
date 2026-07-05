@@ -1,0 +1,73 @@
+# Git / local agent state
+.git/
+.agents/
+.codex/
+
+# Build output
+[Bb]in/
+[Oo]bj/
+artifacts/
+**/artifacts/
+TestResults/
+
+# IDE and user state
+.vs/
+.vscode/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.rsuser
+
+# Logs and temporary files
+*.log
+*.tmp
+*.temp
+*.cache
+*.bak
+*.orig
+*.pid
+
+# Secrets and local-only config
+.env
+.env.*
+*.local
+*.local.*
+*.local.yml
+*.local.yaml
+config/*.local.yml
+config/*.local.yaml
+config/*secret*.yml
+config/*secret*.yaml
+
+# Generated packages / installers
+*.nupkg
+*.snupkg
+*.msix
+*.msixbundle
+*.appx
+*.appxbundle
+*.zip
+*.7z
+*.rar
+
+# Non-source project material
+/PROJECT_STATUS.md
+/docs/
+/pics_example/
+/scripts_python_legacy/
+__pycache__/
+*.pyc
+
+# OCR models and large runtime assets
+/models/
+/logo.png
+
+# Private keys / certificates
+*.key
+*.pem
+*.pfx
+*.p12
+*.cer
+*.crt
+*.snk

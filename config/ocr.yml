@@ -1,0 +1,45 @@
+ocr:
+  enabled: true
+  selected_engine: wechat
+  language_hint: auto
+  min_confidence: 0.55
+  max_concurrency: 6
+  skip_unchanged_image: true
+  continue_on_low_confidence: false
+
+  preprocessing:
+    light_bubble:
+      scale: 3
+      grayscale: true
+      sharpen: true
+      invert: false
+    dark_bubble:
+      scale: 3
+      grayscale: true
+      sharpen: true
+      invert: true
+
+  engines:
+    paddle:
+      enabled: true
+      priority: 10
+      model_path: "models/ocr/paddle/ppocr_v5_mobile/rec.onnx"
+      dictionary_path: "models/ocr/paddle/ppocr_v5_mobile/dict.txt"
+      input_height: 48
+      max_width: 320
+      cpu_threads: 2
+    windows:
+      enabled: true
+      priority: 20
+    openai_vision:
+      enabled: false
+      priority: 90
+      endpoint: "https://api.openai.com/v1/chat/completions"
+      model: "gpt-4o-mini"
+      api_key: ""
+      timeout_ms: 15000
+    wechat:
+      enabled: true
+      priority: 30
+      session_count: 6
+      timeout_ms: 1000

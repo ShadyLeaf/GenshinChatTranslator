@@ -1,0 +1,177 @@
+# 原神聊天气泡 ROI 定位配置
+# 本文件只保存可调参数；算法流程仍在 scripts/locate_rois.py 中。
+# 调参建议：每次只改一小组参数，然后运行 scripts/batch_locate_rois.py 对样本集做对比。
+
+paths:
+  # 单张调试脚本未显式传入图片时，从这个目录里找样本。
+  sample_input_dir: pics_example
+  # 单张调试脚本默认读取的样本通配符；会选择排序后的第一张。
+  sample_input_pattern: "*.png"
+  # scripts/locate_rois.py 的默认输出目录。
+  single_output_dir: artifacts/roi_detection
+  # scripts/batch_locate_rois.py 的默认输出目录。
+  batch_output_dir: artifacts/roi_batch
+  # 单张调试脚本输出的 ROI JSON 文件名。
+  json_filename: rois.json
+  # 单张调试脚本输出的标注截图文件名。
+  annotated_filename: annotated_rois.png
+
+processing:
+  # 连通域分析前的缩小倍数。数值越大越快，但小气泡边界会更粗糙。
+  scale: 4
+
+message_roi:
+  # 聊天消息搜索区域，相对于整张截图宽高的比例。
+  # 这里用于排除左侧列表、顶部栏和底部输入区。
+  left_ratio: 0.20
+  top_ratio: 0.08
+  right_ratio: 0.555
+  bottom_ratio: 0.88
+
+masks:
+  self_light:
+    # 当前玩家浅色气泡的颜色阈值。RGB 三个通道都要超过对应下限。
+    red_min: 145
+    green_min: 130
+    blue_min: 105
+    # 用于排除偏灰/偏白 UI：红色通道至少比蓝色通道高这么多。
+    red_blue_delta_min: 8
+  other_dark:
+    # 其他玩家深色气泡的目标 RGB 颜色。
+    target_rgb: [61, 70, 87]
+    # 深色气泡 RGB 每个通道允许偏离目标色的范围。
+    tolerance_rgb: [18, 18, 24]
+
+candidate_filter:
+  # 气泡候选框的尺寸范围，单位是原始截图像素。
+  min_width: 90
+  min_height: 32
+  max_width: 1200
+  max_height: 220
+  # 最小宽高比；越大越倾向保留横向长条，越小越容易放入头像/按钮等干扰。
+  min_aspect_ratio: 1.15
+  # 气泡颜色像素占候选框面积的最低比例。
+  min_bubble_fill_ratio: 0.50
+  # 两类气泡的最小颜色像素面积，单位是原始截图像素。
+  self_light_min_color_area: 6000
+  other_dark_min_color_area: 6000
+  # 搜索区域左右边缘的安全边距比例。
+  edge_margin_ratio: 0.03
+  # 当前玩家气泡必须至少跨到搜索区域右侧的这个锚点比例。
+  self_right_anchor_ratio: 0.62
+  # 其他玩家气泡左边界必须落在搜索区域左侧锚点范围内。
+  other_left_anchor_min_ratio: 0.00
+  other_left_anchor_max_ratio: 0.10
+  # 同类型候选高度重叠时只保留置信度更高的一个，避免 fallback 与常规检测重复输出。
+  duplicate_overlap_ratio: 0.80
+
+text_box:
+  # 从气泡框向内收缩得到文字 ROI。短气泡会使用最小值，长气泡会按 divisor 放大。
+  shrink_x_min: 12
+  shrink_x_max: 24
+  shrink_x_divisor: 8
+  shrink_y_min: 8
+  shrink_y_max: 14
+  shrink_y_divisor: 8
+
+text_seed_fallback:
+  # 深色气泡与背景粘成大连通块并被候选过滤拒绝时，用精确文字色行重新生成局部候选。
+  enabled: true
+  # 忽略太靠左的精确文字色种子，避免把头像高光或发送者名当作气泡正文。
+  min_seed_x_offset_ratio: 0.05
+  # 一行至少包含这么多精确文字色像素才参与行聚类。
+  row_min_pixels: 3
+  # fallback 候选至少要包含这么多精确文字色像素；短英文和冒号气泡白字很少，不能设太高。
+  min_exact_pixels: 25
+  # fallback 精确文字色外接框的最小高度；用于排除表情贴图上的窄条白色高光。
+  min_text_height: 16
+  # 短 fallback 文本如果异常实心，更像贴图块而不是文字；贴图窄条主要由 min_text_height 过滤。
+  short_text_width_threshold: 80
+  short_text_max_fill_ratio: 0.60
+  # 行聚类允许的最大纵向间隔，单位为原始截图像素。
+  max_row_gap: 14
+  # 按正文精确文字色外接框向外扩张生成局部气泡候选。
+  padding_left: 64
+  padding_right: 80
+  padding_top: 32
+  padding_bottom: 36
+  # 短文本候选的最小气泡框尺寸。
+  min_width: 120
+  min_height: 52
+
+component_refine:
+  # 小图连通域映射回原图后的额外外扩像素。
+  scale_padding: 4
+  # 填充率已足够高的连通块不再做二次收紧。
+  already_dense_fill_ratio: 0.50
+  # 如果一行最多只有这么少的命中像素，认为连通块太稀疏，不做二次收紧。
+  min_max_row_count: 12
+  # 密集行阈值 = max(此最小值, 最大行命中数 * 此比例)。
+  dense_row_threshold_min: 8
+  dense_row_threshold_ratio: 0.35
+  # 密集行上下保留的额外小图像素。
+  row_top_padding: 2
+  row_bottom_padding: 3
+  # 如果一列最多只有这么少的命中像素，认为列方向信息不足。
+  min_max_col_count: 4
+  # 密集列阈值 = max(此最小值, 最大列命中数 * 此比例)。
+  dense_col_threshold_min: 4
+  dense_col_threshold_ratio: 0.20
+  # 密集列左右保留的额外小图像素。
+  col_left_padding: 1
+  col_right_padding: 2
+
+text_color_guard:
+  # 连通域二次收紧前，先在原候选框内查找精确文字色；若收紧框裁到文字，则放宽回来。
+  enabled: true
+  # 放宽到文字色像素外接边界后，再额外保留的像素。
+  padding: 3
+  # 检测气泡 mask 时，把精确文字色像素作为种子向外扩张，帮助召回明亮环境下偏色的半透明气泡。
+  seed_expansion_enabled: true
+  # 种子向外扩张的半径，单位是原始截图像素。
+  seed_expansion_radius: 18
+  # 种子扩张区域内至少要触碰到这么多已有气泡色小图像素，避免单独文字色生成候选。
+  seed_expansion_min_base_pixels: 8
+  colors:
+    # 浅色气泡内文字的精确 RGB 颜色：#323232。
+    self_light: [50, 50, 50]
+    # 深色气泡内文字的精确 RGB 颜色：#ffffff。
+    other_dark: [255, 255, 255]
+
+text_validation:
+  self_light:
+    # 浅色气泡内的文字通常是深色：RGB 都要低于这些上限。
+    red_max: 95
+    green_max: 95
+    blue_max: 95
+    # 最大通道差越小，越偏向灰黑文字，越不容易把彩色背景误判成文字。
+    max_channel_delta: 35
+    # 文字颜色像素数量最低要求：max(固定值, text_box 面积 / area_divisor)。
+    min_pixels: 250
+    area_divisor: 160
+    # 精确 #323232 像素数量的硬性最低要求。
+    exact_min_pixels: 5
+  other_dark:
+    # 深色气泡内的文字通常是浅色：RGB 都要高于这些下限。
+    red_min: 175
+    green_min: 175
+    blue_min: 175
+    max_channel_delta: 45
+    min_pixels: 45
+    area_divisor: 220
+    # 精确 #ffffff 像素数量的硬性最低要求。
+    exact_min_pixels: 5
+
+draw:
+  # 以下参数只影响调试标注图，不影响 ROI 识别结果。
+  message_roi_color: [80, 180, 255]
+  message_roi_width: 5
+  message_roi_label_offset: [8, 8]
+  self_light_color: [255, 80, 80]
+  other_dark_color: [80, 255, 120]
+  fallback_roi_color: [255, 255, 0]
+  bubble_box_width: 6
+  text_box_color: [255, 255, 255]
+  text_box_width: 3
+  label_x_offset: 6
+  label_y_offset: 18

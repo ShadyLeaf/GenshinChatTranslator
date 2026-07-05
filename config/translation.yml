@@ -1,0 +1,22 @@
+translation:
+  enabled: true
+  selected_engine: microsoft_edge
+  target_language: ChineseSimplified
+  timeout_ms: 12000
+  cache_enabled: true
+  skip_same_language: true
+
+  engines:
+    microsoft_edge:
+      enabled: true
+      priority: 10
+      auth_endpoint: "https://edge.microsoft.com/translate/auth"
+      endpoint: "https://api-edge.cognitive.microsofttranslator.com/translate"
+    openai_compatible_llm:
+      enabled: true
+      priority: 20
+      endpoint: "https://api.deepseek.com/v1/chat/completions"
+      model: "deepseek-v4-flash"
+      api_key: ""
+      temperature: 0
+      thinking_type: disabled
