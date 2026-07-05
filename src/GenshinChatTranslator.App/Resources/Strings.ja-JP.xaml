@@ -2,6 +2,8 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:sys="clr-namespace:System;assembly=mscorlib">
     <sys:String x:Key="AppTitle">原神チャット翻訳ツール</sys:String>
+    <sys:String x:Key="OpenSourceProjectPrefix">本プロジェクトはオープンソースです。</sys:String>
+    <sys:String x:Key="OpenSourceProjectLinkText">リポジトリ</sys:String>
     <sys:String x:Key="StartButton">検出開始</sys:String>
     <sys:String x:Key="StopButton">検出停止</sys:String>
     <sys:String x:Key="SnapshotButton">単発キャプチャ</sys:String>

@@ -2,6 +2,8 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:sys="clr-namespace:System;assembly=mscorlib">
     <sys:String x:Key="AppTitle">Genshin Chat Translator</sys:String>
+    <sys:String x:Key="OpenSourceProjectPrefix">This project is open source. </sys:String>
+    <sys:String x:Key="OpenSourceProjectLinkText">Repository</sys:String>
     <sys:String x:Key="StartButton">Start</sys:String>
     <sys:String x:Key="StopButton">Stop</sys:String>
     <sys:String x:Key="SnapshotButton">Snapshot</sys:String>

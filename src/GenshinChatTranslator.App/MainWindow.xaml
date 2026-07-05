@@ -25,13 +25,25 @@
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
 
-            <TextBlock Text="{DynamicResource AppTitle}"
-                       FontSize="24"
-                       FontWeight="SemiBold"
-                       Margin="0,0,16,0"
-                       TextTrimming="CharacterEllipsis"
-                       VerticalAlignment="Center"
-                       Foreground="#1F2937" />
+            <StackPanel Margin="0,0,16,0"
+                        VerticalAlignment="Center">
+                <TextBlock Text="{DynamicResource AppTitle}"
+                           FontSize="24"
+                           FontWeight="SemiBold"
+                           TextTrimming="CharacterEllipsis"
+                           Foreground="#1F2937" />
+                <TextBlock Margin="0,4,0,0"
+                           FontSize="13"
+                           Foreground="#5B6472"
+                           TextWrapping="Wrap">
+                    <Run Text="{DynamicResource OpenSourceProjectPrefix}" />
+                    <Hyperlink NavigateUri="https://github.com/ShadyLeaf/GenshinChatTranslator"
+                               RequestNavigate="ProjectLink_RequestNavigate"
+                               Foreground="#2563EB">
+                        <Run Text="{DynamicResource OpenSourceProjectLinkText}" />
+                    </Hyperlink>
+                </TextBlock>
+            </StackPanel>
 
             <StackPanel Grid.Column="1"
                         HorizontalAlignment="Right"
