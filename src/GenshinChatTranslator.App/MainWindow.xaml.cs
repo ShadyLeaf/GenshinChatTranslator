@@ -441,10 +441,9 @@ public partial class MainWindow : Window
         return false;
     }
 
-    private void BeginDetection(bool useNonStandardAspectMode = false)
+    private void BeginDetection()
     {
-        var skipChatUiGate = useNonStandardAspectMode;
-        if (!useNonStandardAspectMode && !TryGetNonStandardAspectMode(out skipChatUiGate))
+        if (!TryConfirmAspectRatioBeforeStart())
         {
             return;
         }
@@ -455,14 +454,13 @@ public partial class MainWindow : Window
         RecognitionSummaryTextBlock.Text = LocalizationManager.Text("RecognitionSummaryWaiting");
         UpdateLatencyText(null);
         SetStatus(LocalizationManager.Text("StatusRunning"));
-        _detectionLoop?.Start(skipChatUiGate);
+        _detectionLoop?.Start();
         _timer.Start();
         RefreshOverlay();
     }
 
-    private bool TryGetNonStandardAspectMode(out bool skipChatUiGate)
+    private bool TryConfirmAspectRatioBeforeStart()
     {
-        skipChatUiGate = false;
         var window = _windowTracker.FindTargetWindow(DefaultTitleKeywords);
         if (window is null)
         {
@@ -487,7 +485,6 @@ public partial class MainWindow : Window
             return false;
         }
 
-        skipChatUiGate = true;
         return true;
     }
 
@@ -546,23 +543,6 @@ public partial class MainWindow : Window
             RecognitionSummaryTextBlock.Text = LocalizationManager.Format("RecognitionSummaryFailedFormat", snapshot.ErrorMessage);
             UpdateLatencyText(snapshot.LatencyAverages);
             SetStatus(LocalizationManager.Format("StatusCaptureFailedFormat", snapshot.ErrorMessage));
-            return;
-        }
-
-        if (snapshot.UnsupportedAspectWindow is { } unsupportedAspectWindow)
-        {
-            _overlayWindow?.Hide();
-            _lastRenderedSnapshotAt = DateTime.MinValue;
-            StopDetection();
-            if (ShowUnsupportedAspectRatioPrompt(unsupportedAspectWindow))
-            {
-                BeginDetection(useNonStandardAspectMode: true);
-            }
-            else
-            {
-                SetStatus(LocalizationManager.Text("StatusUnsupportedAspectRatioStopped"));
-            }
-
             return;
         }
 

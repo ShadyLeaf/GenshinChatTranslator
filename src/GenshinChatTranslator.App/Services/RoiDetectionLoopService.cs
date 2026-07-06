@@ -26,7 +26,6 @@ public sealed class RoiDetectionLoopService : IDisposable
     private CancellationTokenSource? _cancellation;
     private Task? _worker;
     private int _generation;
-    private bool _skipChatUiGate;
     private bool _fastDetection;
     private string? _lastTranslationSignature;
     private IReadOnlyList<ChatTranslationItem> _lastTranslationResults = Array.Empty<ChatTranslationItem>();
@@ -37,7 +36,6 @@ public sealed class RoiDetectionLoopService : IDisposable
         TargetMissing: false,
         TargetBackground: false,
         ChatInterfaceMissing: false,
-        UnsupportedAspectWindow: null,
         LatencyAverages: null,
         UpdatedAt: DateTime.Now);
 
@@ -64,7 +62,7 @@ public sealed class RoiDetectionLoopService : IDisposable
         }
     }
 
-    public void Start(bool skipChatUiGate = false)
+    public void Start()
     {
         lock (_gate)
         {
@@ -76,7 +74,6 @@ public sealed class RoiDetectionLoopService : IDisposable
             _cancellation = new CancellationTokenSource();
             var cancellationToken = _cancellation.Token;
             var generation = ++_generation;
-            _skipChatUiGate = skipChatUiGate;
             _lastTranslationSignature = null;
             _lastTranslationResults = Array.Empty<ChatTranslationItem>();
             _latencyAverager.Clear();
@@ -87,7 +84,6 @@ public sealed class RoiDetectionLoopService : IDisposable
                 TargetMissing: false,
                 TargetBackground: false,
                 ChatInterfaceMissing: false,
-                UnsupportedAspectWindow: null,
                 LatencyAverages: null,
                 UpdatedAt: DateTime.Now);
             _worker = Task.Run(() => RunAsync(generation, cancellationToken));
@@ -110,7 +106,6 @@ public sealed class RoiDetectionLoopService : IDisposable
             {
                 IsRunning = false,
                 ChatInterfaceMissing = false,
-                UnsupportedAspectWindow = null,
                 LatencyAverages = null,
                 UpdatedAt = DateTime.Now,
             };
@@ -194,7 +189,6 @@ public sealed class RoiDetectionLoopService : IDisposable
                     TargetMissing: true,
                     TargetBackground: false,
                     ChatInterfaceMissing: false,
-                    UnsupportedAspectWindow: null,
                     LatencyAverages: AddLatencySample(),
                     UpdatedAt: DateTime.Now), generation);
                 _lastTranslationSignature = null;
@@ -211,7 +205,6 @@ public sealed class RoiDetectionLoopService : IDisposable
                     TargetMissing: false,
                     TargetBackground: true,
                     ChatInterfaceMissing: false,
-                    UnsupportedAspectWindow: null,
                     LatencyAverages: AddLatencySample(),
                     UpdatedAt: DateTime.Now), generation);
                 _lastTranslationSignature = null;
@@ -219,20 +212,7 @@ public sealed class RoiDetectionLoopService : IDisposable
                 return _nonChatInterval;
             }
 
-            if (!_skipChatUiGate && !IsSupportedAspectRatio(window.ClientBox.Width, window.ClientBox.Height))
-            {
-                Publish(new RoiDetectionLoopSnapshot(
-                    IsRunning: true,
-                    Result: null,
-                    ErrorMessage: null,
-                    TargetMissing: false,
-                    TargetBackground: false,
-                    ChatInterfaceMissing: false,
-                    UnsupportedAspectWindow: window,
-                    LatencyAverages: AddLatencySample(),
-                    UpdatedAt: DateTime.Now), generation);
-                return _nonChatInterval;
-            }
+            var skipChatUiGate = !IsSupportedAspectRatio(window.ClientBox.Width, window.ClientBox.Height);
 
             cancellationToken.ThrowIfCancellationRequested();
             var captureWatch = Stopwatch.StartNew();
@@ -241,7 +221,7 @@ public sealed class RoiDetectionLoopService : IDisposable
             captureElapsedMs = captureWatch.Elapsed.TotalMilliseconds;
             cancellationToken.ThrowIfCancellationRequested();
             var isChatInterface = true;
-            if (!_skipChatUiGate)
+            if (!skipChatUiGate)
             {
                 var chatGateWatch = Stopwatch.StartNew();
                 var chatUiGateResult = _chatUiGate.Detect(frame);
@@ -259,7 +239,6 @@ public sealed class RoiDetectionLoopService : IDisposable
                     TargetMissing: false,
                     TargetBackground: false,
                     ChatInterfaceMissing: true,
-                    UnsupportedAspectWindow: null,
                     LatencyAverages: AddLatencySample(),
                     UpdatedAt: DateTime.Now), generation);
                 return _nonChatInterval;
@@ -322,7 +301,6 @@ public sealed class RoiDetectionLoopService : IDisposable
                 TargetMissing: false,
                 TargetBackground: false,
                 ChatInterfaceMissing: false,
-                UnsupportedAspectWindow: null,
                 LatencyAverages: latencyAverages,
                 UpdatedAt: DateTime.Now), generation);
             return GetCompletedFlowInterval();
@@ -340,7 +318,6 @@ public sealed class RoiDetectionLoopService : IDisposable
                 TargetMissing: false,
                 TargetBackground: false,
                 ChatInterfaceMissing: false,
-                UnsupportedAspectWindow: null,
                 LatencyAverages: AddLatencySample(),
                 UpdatedAt: DateTime.Now), generation);
             return _nonChatInterval;

@@ -20,7 +20,6 @@ public sealed record RoiDetectionLoopSnapshot(
     bool TargetMissing,
     bool TargetBackground,
     bool ChatInterfaceMissing,
-    WindowInfo? UnsupportedAspectWindow,
     PipelineLatencyAverages? LatencyAverages,
     DateTime UpdatedAt);
 
