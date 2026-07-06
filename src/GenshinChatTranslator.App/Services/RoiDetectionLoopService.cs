@@ -10,6 +10,7 @@ public sealed class RoiDetectionLoopService : IDisposable
 {
     private const double SupportedAspectRatio = 16d / 9d;
     private const double SupportedAspectRatioTolerance = 0.01d;
+    private static readonly TimeSpan SlowIterationRestartThreshold = TimeSpan.FromSeconds(10);
     private readonly object _gate = new();
     private readonly string[] _titleKeywords;
     private readonly TimeSpan _nonChatInterval = TimeSpan.FromMilliseconds(200);
@@ -144,10 +145,28 @@ public sealed class RoiDetectionLoopService : IDisposable
         {
             while (!cancellationToken.IsCancellationRequested)
             {
-                var delay = await DetectOnceAsync(generation, cancellationToken).ConfigureAwait(false);
-                if (delay > TimeSpan.Zero)
+                var detectionTask = DetectOnceAsync(generation, cancellationToken);
+                using var watchdogCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                var watchdogTask = Task.Delay(SlowIterationRestartThreshold, watchdogCancellation.Token);
+                var completedTask = await Task.WhenAny(detectionTask, watchdogTask).ConfigureAwait(false);
+                if (completedTask != detectionTask)
                 {
-                    await Task.Delay(delay, cancellationToken).ConfigureAwait(false);
+                    cancellationToken.ThrowIfCancellationRequested();
+                    ObserveDetached(detectionTask);
+                    RestartFromWorker(generation, cancelCurrent: true);
+                    return;
+                }
+
+                watchdogCancellation.Cancel();
+                var iteration = await detectionTask.ConfigureAwait(false);
+                if (iteration.RestartRequested && RestartFromWorker(generation, cancelCurrent: true))
+                {
+                    return;
+                }
+
+                if (iteration.Delay > TimeSpan.Zero)
+                {
+                    await Task.Delay(iteration.Delay, cancellationToken).ConfigureAwait(false);
                 }
             }
         }
@@ -156,7 +175,55 @@ public sealed class RoiDetectionLoopService : IDisposable
         }
     }
 
-    private async Task<TimeSpan> DetectOnceAsync(int generation, CancellationToken cancellationToken)
+    private bool RestartFromWorker(int generation, bool cancelCurrent)
+    {
+        CancellationTokenSource? previousCancellation;
+        CancellationTokenSource nextCancellation;
+        int nextGeneration;
+        lock (_gate)
+        {
+            if (_cancellation is null || generation != _generation)
+            {
+                return false;
+            }
+
+            previousCancellation = _cancellation;
+            nextCancellation = new CancellationTokenSource();
+            _cancellation = nextCancellation;
+            nextGeneration = ++_generation;
+            _lastTranslationSignature = null;
+            _lastTranslationResults = Array.Empty<ChatTranslationItem>();
+            _latencyAverager.Clear();
+            _snapshot = new RoiDetectionLoopSnapshot(
+                IsRunning: true,
+                Result: null,
+                ErrorMessage: null,
+                TargetMissing: false,
+                TargetBackground: false,
+                ChatInterfaceMissing: false,
+                LatencyAverages: null,
+                UpdatedAt: DateTime.Now);
+            _worker = Task.Run(() => RunAsync(nextGeneration, nextCancellation.Token));
+        }
+
+        if (cancelCurrent)
+        {
+            previousCancellation?.Cancel();
+        }
+
+        return true;
+    }
+
+    private static void ObserveDetached(Task task)
+    {
+        _ = task.ContinueWith(
+            completedTask => _ = completedTask.Exception,
+            CancellationToken.None,
+            TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously,
+            TaskScheduler.Default);
+    }
+
+    private async Task<DetectionLoopIterationResult> DetectOnceAsync(int generation, CancellationToken cancellationToken)
     {
         var totalWatch = Stopwatch.StartNew();
         double? captureElapsedMs = null;
@@ -165,16 +232,23 @@ public sealed class RoiDetectionLoopService : IDisposable
         double? ocrElapsedMs = null;
         double? translationElapsedMs = null;
 
-        PipelineLatencyAverages AddLatencySample()
+        PipelineLatencyAverages? AddLatencySample()
         {
             totalWatch.Stop();
-            return _latencyAverager.Add(new PipelineLatencySample(
+            return AddLatencySampleIfCurrent(generation, new PipelineLatencySample(
                 totalWatch.Elapsed.TotalMilliseconds,
                 captureElapsedMs,
                 chatGateElapsedMs,
                 roiElapsedMs,
                 ocrElapsedMs,
                 translationElapsedMs));
+        }
+
+        DetectionLoopIterationResult BuildIterationResult(TimeSpan delay)
+        {
+            return new DetectionLoopIterationResult(
+                delay,
+                totalWatch.Elapsed > SlowIterationRestartThreshold);
         }
 
         try
@@ -191,9 +265,8 @@ public sealed class RoiDetectionLoopService : IDisposable
                     ChatInterfaceMissing: false,
                     LatencyAverages: AddLatencySample(),
                     UpdatedAt: DateTime.Now), generation);
-                _lastTranslationSignature = null;
-                _lastTranslationResults = Array.Empty<ChatTranslationItem>();
-                return _nonChatInterval;
+                ClearTranslationStateIfCurrent(generation);
+                return BuildIterationResult(_nonChatInterval);
             }
 
             if (!_windowTracker.IsForegroundWindow(window))
@@ -207,9 +280,8 @@ public sealed class RoiDetectionLoopService : IDisposable
                     ChatInterfaceMissing: false,
                     LatencyAverages: AddLatencySample(),
                     UpdatedAt: DateTime.Now), generation);
-                _lastTranslationSignature = null;
-                _lastTranslationResults = Array.Empty<ChatTranslationItem>();
-                return _nonChatInterval;
+                ClearTranslationStateIfCurrent(generation);
+                return BuildIterationResult(_nonChatInterval);
             }
 
             var skipChatUiGate = !IsSupportedAspectRatio(window.ClientBox.Width, window.ClientBox.Height);
@@ -241,7 +313,7 @@ public sealed class RoiDetectionLoopService : IDisposable
                     ChatInterfaceMissing: true,
                     LatencyAverages: AddLatencySample(),
                     UpdatedAt: DateTime.Now), generation);
-                return _nonChatInterval;
+                return BuildIterationResult(_nonChatInterval);
             }
 
             var roiWatch = Stopwatch.StartNew();
@@ -272,7 +344,7 @@ public sealed class RoiDetectionLoopService : IDisposable
                     }
 
                     var translationWatch = Stopwatch.StartNew();
-                    var translationRun = await TranslateOnlyWhenOcrTextChangedAsync(ocrResults, cancellationToken).ConfigureAwait(false);
+                    var translationRun = await TranslateOnlyWhenOcrTextChangedAsync(ocrResults, generation, cancellationToken).ConfigureAwait(false);
                     translationWatch.Stop();
                     if (translationRun.RequestSent)
                     {
@@ -303,7 +375,7 @@ public sealed class RoiDetectionLoopService : IDisposable
                 ChatInterfaceMissing: false,
                 LatencyAverages: latencyAverages,
                 UpdatedAt: DateTime.Now), generation);
-            return GetCompletedFlowInterval();
+            return BuildIterationResult(GetCompletedFlowInterval());
         }
         catch (OperationCanceledException)
         {
@@ -320,7 +392,7 @@ public sealed class RoiDetectionLoopService : IDisposable
                 ChatInterfaceMissing: false,
                 LatencyAverages: AddLatencySample(),
                 UpdatedAt: DateTime.Now), generation);
-            return _nonChatInterval;
+            return BuildIterationResult(_nonChatInterval);
         }
     }
 
@@ -386,18 +458,34 @@ public sealed class RoiDetectionLoopService : IDisposable
 
     private async Task<TranslationRunResult> TranslateOnlyWhenOcrTextChangedAsync(
         IReadOnlyList<ChatOcrItem> ocrResults,
+        int generation,
         CancellationToken cancellationToken)
     {
         var signature = BuildTranslationSignature(ocrResults);
-        if (string.Equals(_lastTranslationSignature, signature, StringComparison.Ordinal))
+        lock (_gate)
         {
-            return new TranslationRunResult(_lastTranslationResults, RequestSent: false);
+            if (_cancellation is null || generation != _generation)
+            {
+                return new TranslationRunResult(Array.Empty<ChatTranslationItem>(), RequestSent: false);
+            }
+
+            if (string.Equals(_lastTranslationSignature, signature, StringComparison.Ordinal))
+            {
+                return new TranslationRunResult(_lastTranslationResults, RequestSent: false);
+            }
         }
 
         var translationBatch = await _translationPipeline.TranslateWithStatsAsync(ocrResults, cancellationToken).ConfigureAwait(false);
         var translationResults = translationBatch.Items;
-        _lastTranslationSignature = signature;
-        _lastTranslationResults = translationResults;
+        lock (_gate)
+        {
+            if (_cancellation is not null && generation == _generation)
+            {
+                _lastTranslationSignature = signature;
+                _lastTranslationResults = translationResults;
+            }
+        }
+
         return new TranslationRunResult(translationResults, translationBatch.RequestSent);
     }
 
@@ -446,6 +534,33 @@ public sealed class RoiDetectionLoopService : IDisposable
         }
     }
 
+    private PipelineLatencyAverages? AddLatencySampleIfCurrent(int generation, PipelineLatencySample sample)
+    {
+        lock (_gate)
+        {
+            if (_cancellation is null || generation != _generation)
+            {
+                return _latencyAverager.Current;
+            }
+
+            return _latencyAverager.Add(sample);
+        }
+    }
+
+    private void ClearTranslationStateIfCurrent(int generation)
+    {
+        lock (_gate)
+        {
+            if (_cancellation is null || generation != _generation)
+            {
+                return;
+            }
+
+            _lastTranslationSignature = null;
+            _lastTranslationResults = Array.Empty<ChatTranslationItem>();
+        }
+    }
+
     private static double ElapsedMilliseconds(long startTimestamp, long endTimestamp)
     {
         return (endTimestamp - startTimestamp) * 1000d / Stopwatch.Frequency;
@@ -476,6 +591,10 @@ public sealed class RoiDetectionLoopService : IDisposable
     private sealed record TranslationRunResult(
         IReadOnlyList<ChatTranslationItem> Results,
         bool RequestSent);
+
+    private sealed record DetectionLoopIterationResult(
+        TimeSpan Delay,
+        bool RestartRequested);
 
     private sealed record SingleItemPipelineRunResult(
         IReadOnlyList<ChatOcrItem> OcrResults,
