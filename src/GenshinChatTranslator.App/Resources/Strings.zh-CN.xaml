@@ -13,6 +13,7 @@
     <sys:String x:Key="UiLanguageJapaneseButton">日本語</sys:String>
     <sys:String x:Key="UiLanguageEnglishButton">English</sys:String>
     <sys:String x:Key="OcrEngineLabel">OCR 方式</sys:String>
+    <sys:String x:Key="FastDetectionLabel">快速检测</sys:String>
     <sys:String x:Key="TranslationEngineLabel">翻译方式</sys:String>
     <sys:String x:Key="ConfigureLlmButton">配置 LLM</sys:String>
     <sys:String x:Key="AutoFixWin11BitBltLabel">自动关闭 Windows 11 窗口化优化以支持 BitBlt</sys:String>
@@ -49,6 +50,8 @@
     <sys:String x:Key="StatusSnapshotSavedFormat">单次截图已保存：{0}</sys:String>
     <sys:String x:Key="StatusCaptureFailedFormat">截图或 ROI 检测失败：{0}</sys:String>
     <sys:String x:Key="StatusOcrEngineChangedFormat">OCR 方式已切换为：{0}</sys:String>
+    <sys:String x:Key="StatusFastDetectionEnabled">快速检测已开启，下一轮识别将使用并行 OCR 和 0ms 管线间隔。</sys:String>
+    <sys:String x:Key="StatusFastDetectionDisabled">快速检测已关闭，下一轮识别将使用串行 OCR 和 1000ms 管线间隔。</sys:String>
     <sys:String x:Key="StatusTranslationEngineChangedFormat">翻译方式已切换为：{0}</sys:String>
     <sys:String x:Key="StatusTranslationTargetChangedFormat">翻译目标语言已切换为：{0}</sys:String>
     <sys:String x:Key="StatusUiLanguageChangedFormat">界面语言已切换为：{0}</sys:String>

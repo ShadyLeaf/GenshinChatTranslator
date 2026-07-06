@@ -13,6 +13,7 @@
     <sys:String x:Key="UiLanguageJapaneseButton">日本語</sys:String>
     <sys:String x:Key="UiLanguageEnglishButton">English</sys:String>
     <sys:String x:Key="OcrEngineLabel">OCR 方式</sys:String>
+    <sys:String x:Key="FastDetectionLabel">高速検出</sys:String>
     <sys:String x:Key="TranslationEngineLabel">翻訳方式</sys:String>
     <sys:String x:Key="ConfigureLlmButton">LLM 設定</sys:String>
     <sys:String x:Key="AutoFixWin11BitBltLabel">BitBlt のため Windows 11 のウィンドウ最適化を自動的に無効化</sys:String>
@@ -49,6 +50,8 @@
     <sys:String x:Key="StatusSnapshotSavedFormat">単発キャプチャを保存しました：{0}</sys:String>
     <sys:String x:Key="StatusCaptureFailedFormat">キャプチャまたは ROI 検出に失敗しました：{0}</sys:String>
     <sys:String x:Key="StatusOcrEngineChangedFormat">OCR 方式を切り替えました：{0}</sys:String>
+    <sys:String x:Key="StatusFastDetectionEnabled">高速検出を有効にしました。次回の認識から並列 OCR と 0ms のパイプライン間隔を使用します。</sys:String>
+    <sys:String x:Key="StatusFastDetectionDisabled">高速検出を無効にしました。次回の認識からシリアル OCR と 1000ms のパイプライン間隔を使用します。</sys:String>
     <sys:String x:Key="StatusTranslationEngineChangedFormat">翻訳方式を切り替えました：{0}</sys:String>
     <sys:String x:Key="StatusTranslationTargetChangedFormat">翻訳先言語を切り替えました：{0}</sys:String>
     <sys:String x:Key="StatusUiLanguageChangedFormat">UI 言語を切り替えました：{0}</sys:String>

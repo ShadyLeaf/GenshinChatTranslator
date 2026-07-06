@@ -3,7 +3,7 @@ ocr:
   selected_engine: wechat
   language_hint: auto
   min_confidence: 0.55
-  max_concurrency: 6
+  max_concurrency: 5
   skip_unchanged_image: true
   continue_on_low_confidence: false
 
@@ -41,5 +41,5 @@ ocr:
     wechat:
       enabled: true
       priority: 30
-      session_count: 6
+      session_count: 5
       timeout_ms: 1000

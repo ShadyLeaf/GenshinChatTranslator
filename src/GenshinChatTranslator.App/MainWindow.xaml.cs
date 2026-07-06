@@ -91,11 +91,13 @@ public partial class MainWindow : Window
 
             _snapshotDetector = new ChatRoiDetector(_roiConfig);
             _detectionLoop = new RoiDetectionLoopService(DefaultTitleKeywords, _roiConfig, _ocrPipeline, _translationPipeline);
+            _detectionLoop.SetFastDetection(_preferences.FastDetection);
             _overlayWindow = new OverlayWindow();
             DebugModeCheckBox.IsChecked = _isDebugMode;
             _isRefreshingLocalizedChoices = true;
             try
             {
+                FastDetectionCheckBox.IsChecked = _preferences.FastDetection;
                 AutoFixWin11BitBltCheckBox.IsChecked = _preferences.AutoFixWin11BitBlt;
             }
             finally
@@ -256,6 +258,20 @@ public partial class MainWindow : Window
         _preferences.AutoFixWin11BitBlt = AutoFixWin11BitBltCheckBox.IsChecked == true;
         SaveUserPreferences();
         ApplyWin11BitBltFixIfEnabled();
+    }
+
+    private void FastDetectionCheckBox_CheckedChanged(object sender, RoutedEventArgs e)
+    {
+        if (_isRefreshingLocalizedChoices)
+        {
+            return;
+        }
+
+        var fastDetection = FastDetectionCheckBox.IsChecked == true;
+        ApplyFastDetection(fastDetection);
+        _preferences.FastDetection = fastDetection;
+        SaveUserPreferences();
+        SetStatus(LocalizationManager.Text(fastDetection ? "StatusFastDetectionEnabled" : "StatusFastDetectionDisabled"));
     }
 
     private void OpenDisplayAdvancedGraphicsSettingsButton_Click(object sender, RoutedEventArgs e)
@@ -728,6 +744,7 @@ public partial class MainWindow : Window
         var visibility = _isDebugMode ? Visibility.Visible : Visibility.Collapsed;
         DebugDetailsBorder.Visibility = visibility;
         SnapshotButton.Visibility = visibility;
+        StatusTextBlock.Visibility = visibility;
     }
 
     private void ReloadTranslationConfiguration()
@@ -767,6 +784,8 @@ public partial class MainWindow : Window
             _ocrPipeline.SelectEngine(ocrEngine);
         }
 
+        ApplyFastDetection(_preferences.FastDetection);
+
         if (_translationPipeline is null)
         {
             return;
@@ -792,6 +811,7 @@ public partial class MainWindow : Window
             _preferences.OcrEngine = _ocrPipeline.SelectedEngineKind.ToString();
         }
 
+        _preferences.FastDetection = FastDetectionCheckBox.IsChecked == true;
         if (_translationPipeline is not null)
         {
             _preferences.TranslationEngine = _translationPipeline.SelectedEngineKind.ToString();
@@ -816,6 +836,12 @@ public partial class MainWindow : Window
         {
             BitBltRegistryHelper.SetDirectXUserGlobalSettings();
         }
+    }
+
+    private void ApplyFastDetection(bool enabled)
+    {
+        _ocrPipeline?.SetSerialOcr(!enabled);
+        _detectionLoop?.SetFastDetection(enabled);
     }
 
     private void UpdateConfigureLlmButtonVisibility()

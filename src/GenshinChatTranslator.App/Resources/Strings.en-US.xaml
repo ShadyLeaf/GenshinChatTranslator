@@ -13,10 +13,11 @@
     <sys:String x:Key="UiLanguageJapaneseButton">日本語</sys:String>
     <sys:String x:Key="UiLanguageEnglishButton">English</sys:String>
     <sys:String x:Key="OcrEngineLabel">OCR engine</sys:String>
+    <sys:String x:Key="FastDetectionLabel">Fast detection</sys:String>
     <sys:String x:Key="TranslationEngineLabel">Translator</sys:String>
     <sys:String x:Key="ConfigureLlmButton">Configure LLM</sys:String>
-    <sys:String x:Key="AutoFixWin11BitBltLabel">Automatically disable Windows 11 windowed optimizations for BitBlt</sys:String>
-    <sys:String x:Key="AutoFixWin11BitBltHint">Restart the game after changing this setting</sys:String>
+    <sys:String x:Key="AutoFixWin11BitBltLabel">Disable Win11 windowed optimization for BitBlt</sys:String>
+    <sys:String x:Key="AutoFixWin11BitBltHint">Restart the game after changing.</sys:String>
     <sys:String x:Key="ManualGraphicsSettingsButton">Manual setup</sys:String>
     <sys:String x:Key="TranslationTargetLanguageLabel">Target</sys:String>
     <sys:String x:Key="TargetLabel">Target window</sys:String>
@@ -49,6 +50,8 @@
     <sys:String x:Key="StatusSnapshotSavedFormat">Snapshot saved: {0}</sys:String>
     <sys:String x:Key="StatusCaptureFailedFormat">Capture or ROI detection failed: {0}</sys:String>
     <sys:String x:Key="StatusOcrEngineChangedFormat">OCR engine changed to: {0}</sys:String>
+    <sys:String x:Key="StatusFastDetectionEnabled">Fast detection enabled. The next pass will use parallel OCR and a 0ms pipeline interval.</sys:String>
+    <sys:String x:Key="StatusFastDetectionDisabled">Fast detection disabled. The next pass will use serial OCR and a 1000ms pipeline interval.</sys:String>
     <sys:String x:Key="StatusTranslationEngineChangedFormat">Translator changed to: {0}</sys:String>
     <sys:String x:Key="StatusTranslationTargetChangedFormat">Translation target changed to: {0}</sys:String>
     <sys:String x:Key="StatusUiLanguageChangedFormat">UI language changed to: {0}</sys:String>

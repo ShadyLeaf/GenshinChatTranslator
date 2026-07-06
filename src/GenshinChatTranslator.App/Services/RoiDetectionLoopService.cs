@@ -13,8 +13,8 @@ public sealed class RoiDetectionLoopService : IDisposable
     private readonly object _gate = new();
     private readonly string[] _titleKeywords;
     private readonly TimeSpan _nonChatInterval = TimeSpan.FromMilliseconds(200);
-    private readonly TimeSpan _defaultCompletedFlowInterval = TimeSpan.Zero;
-    private readonly TimeSpan _nonStandardAspectCompletedFlowInterval = TimeSpan.FromMilliseconds(1000);
+    private readonly TimeSpan _fastDetectionCompletedFlowInterval = TimeSpan.Zero;
+    private readonly TimeSpan _standardDetectionCompletedFlowInterval = TimeSpan.FromMilliseconds(1000);
     private readonly WindowTracker _windowTracker = new();
     private readonly GdiFrameCaptureService _captureService = new();
     private readonly ChatUiGate _chatUiGate = new();
@@ -27,7 +27,7 @@ public sealed class RoiDetectionLoopService : IDisposable
     private Task? _worker;
     private int _generation;
     private bool _skipChatUiGate;
-    private TimeSpan _completedFlowInterval;
+    private bool _fastDetection;
     private string? _lastTranslationSignature;
     private IReadOnlyList<ChatTranslationItem> _lastTranslationResults = Array.Empty<ChatTranslationItem>();
     private RoiDetectionLoopSnapshot _snapshot = new(
@@ -77,9 +77,6 @@ public sealed class RoiDetectionLoopService : IDisposable
             var cancellationToken = _cancellation.Token;
             var generation = ++_generation;
             _skipChatUiGate = skipChatUiGate;
-            _completedFlowInterval = skipChatUiGate
-                ? _nonStandardAspectCompletedFlowInterval
-                : _defaultCompletedFlowInterval;
             _lastTranslationSignature = null;
             _lastTranslationResults = Array.Empty<ChatTranslationItem>();
             _latencyAverager.Clear();
@@ -130,6 +127,14 @@ public sealed class RoiDetectionLoopService : IDisposable
             _lastTranslationSignature = null;
             _lastTranslationResults = Array.Empty<ChatTranslationItem>();
             _latencyAverager.Clear();
+        }
+    }
+
+    public void SetFastDetection(bool enabled)
+    {
+        lock (_gate)
+        {
+            _fastDetection = enabled;
         }
     }
 
@@ -305,7 +310,7 @@ public sealed class RoiDetectionLoopService : IDisposable
                 UnsupportedAspectWindow: null,
                 LatencyAverages: latencyAverages,
                 UpdatedAt: DateTime.Now), generation);
-            return _completedFlowInterval;
+            return GetCompletedFlowInterval();
         }
         catch (OperationCanceledException)
         {
@@ -451,6 +456,16 @@ public sealed class RoiDetectionLoopService : IDisposable
     private static double ElapsedMilliseconds(long startTimestamp, long endTimestamp)
     {
         return (endTimestamp - startTimestamp) * 1000d / Stopwatch.Frequency;
+    }
+
+    private TimeSpan GetCompletedFlowInterval()
+    {
+        lock (_gate)
+        {
+            return _fastDetection
+                ? _fastDetectionCompletedFlowInterval
+                : _standardDetectionCompletedFlowInterval;
+        }
     }
 
     private static bool IsSupportedAspectRatio(int width, int height)

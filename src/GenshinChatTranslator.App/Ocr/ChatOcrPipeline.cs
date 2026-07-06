@@ -10,7 +10,9 @@ public sealed class ChatOcrPipeline
     private readonly OcrResultCache _cache = new();
     private readonly IReadOnlyDictionary<OcrEngineKind, IChatOcrEngine> _engines;
     private readonly object _engineGate = new();
+    private readonly object _runtimeSettingsGate = new();
     private OcrEngineKind _selectedEngineKind;
+    private int _runtimeMaxConcurrency;
 
     public ChatOcrPipeline(OcrOptions options)
     {
@@ -20,6 +22,7 @@ public sealed class ChatOcrPipeline
         _selectedEngineKind = _engines.ContainsKey(options.SelectedEngine)
             ? options.SelectedEngine
             : _engines.Keys.FirstOrDefault();
+        _runtimeMaxConcurrency = options.MaxConcurrency;
     }
 
     public OcrEngineKind SelectedEngineKind
@@ -34,6 +37,30 @@ public sealed class ChatOcrPipeline
     }
 
     public IReadOnlyList<OcrEngineKind> AvailableEngineKinds => _engines.Keys.ToArray();
+
+    public int RuntimeMaxConcurrency
+    {
+        get
+        {
+            lock (_runtimeSettingsGate)
+            {
+                return _runtimeMaxConcurrency;
+            }
+        }
+    }
+
+    public void SetSerialOcr(bool enabled)
+    {
+        SetRuntimeMaxConcurrency(enabled ? 1 : _options.MaxConcurrency);
+    }
+
+    public void SetRuntimeMaxConcurrency(int maxConcurrency)
+    {
+        lock (_runtimeSettingsGate)
+        {
+            _runtimeMaxConcurrency = Math.Max(1, maxConcurrency);
+        }
+    }
 
     public void SelectEngine(OcrEngineKind engineKind)
     {
@@ -62,7 +89,7 @@ public sealed class ChatOcrPipeline
 
         var engineKind = SelectedEngineKind;
         var items = new ChatOcrItem[rois.Count];
-        using var concurrencyGate = new SemaphoreSlim(Math.Min(_options.MaxConcurrency, rois.Count));
+        using var concurrencyGate = new SemaphoreSlim(Math.Min(RuntimeMaxConcurrency, rois.Count));
         var pendingTasks = new List<Task>(rois.Count);
 
         for (var index = 0; index < rois.Count; index++)
