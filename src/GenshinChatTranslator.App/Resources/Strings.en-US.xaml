@@ -39,8 +39,8 @@
     <sys:String x:Key="RecognitionSummaryNotChatInterface">Target window found; current UI is not chat; ROI/OCR/translation skipped.</sys:String>
     <sys:String x:Key="RecognitionSummaryFailedFormat">Detection failed: {0}</sys:String>
     <sys:String x:Key="RecognitionSummaryActiveFormat">Chat UI; {0} ROI(s); OCR {1}/{2}; translation {3}/{4}.</sys:String>
-    <sys:String x:Key="LatencyNoSamples">No complete translation pipeline samples yet.</sys:String>
-    <sys:String x:Key="LatencyAverageFormat">Last {0}/{1}: end-to-end {2:F1} ms; capture {3:F1} ms, UI {4:F3} ms, ROI {5:F1} ms, OCR {6:F1} ms, translation {7:F1} ms.</sys:String>
+    <sys:String x:Key="LatencyNoSamples">No background loop samples yet.</sys:String>
+    <sys:String x:Key="LatencyAverageFormat">Last {0}/{1} loops: end-to-end {2:F1} ms; capture {3}, UI {4}, ROI {5}, OCR {6}, translation {7}.</sys:String>
     <sys:String x:Key="StatusReady">Configuration loaded. Ready to start.</sys:String>
     <sys:String x:Key="StatusRunning">Detecting: the overlay is shown only while the target window is in the foreground.</sys:String>
     <sys:String x:Key="StatusStopped">Detection stopped.</sys:String>

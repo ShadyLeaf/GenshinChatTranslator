@@ -26,18 +26,18 @@ public sealed record RoiDetectionLoopSnapshot(
 
 public sealed record PipelineLatencySample(
     double EndToEndMs,
-    double CaptureMs,
-    double ChatGateMs,
-    double RoiMs,
-    double OcrMs,
-    double TranslationMs);
+    double? CaptureMs,
+    double? ChatGateMs,
+    double? RoiMs,
+    double? OcrMs,
+    double? TranslationMs);
 
 public sealed record PipelineLatencyAverages(
     int Count,
     int Capacity,
     double EndToEndMs,
-    double CaptureMs,
-    double ChatGateMs,
-    double RoiMs,
-    double OcrMs,
-    double TranslationMs);
+    double? CaptureMs,
+    double? ChatGateMs,
+    double? RoiMs,
+    double? OcrMs,
+    double? TranslationMs);

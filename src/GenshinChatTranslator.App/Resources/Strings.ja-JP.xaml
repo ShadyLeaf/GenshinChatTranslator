@@ -39,8 +39,8 @@
     <sys:String x:Key="RecognitionSummaryNotChatInterface">対象ウィンドウは見つかりましたが、現在はチャット画面ではないため ROI/OCR/翻訳をスキップしました。</sys:String>
     <sys:String x:Key="RecognitionSummaryFailedFormat">検出に失敗しました：{0}</sys:String>
     <sys:String x:Key="RecognitionSummaryActiveFormat">チャット画面；ROI {0} 件；OCR {1}/{2}；翻訳 {3}/{4}。</sys:String>
-    <sys:String x:Key="LatencyNoSamples">完全な翻訳パイプラインのサンプルはまだありません。</sys:String>
-    <sys:String x:Key="LatencyAverageFormat">直近 {0}/{1} 回：エンドツーエンド {2:F1} ms；キャプチャ {3:F1} ms、UI {4:F3} ms、ROI {5:F1} ms、OCR {6:F1} ms、翻訳 {7:F1} ms。</sys:String>
+    <sys:String x:Key="LatencyNoSamples">バックグラウンドループのサンプルはまだありません。</sys:String>
+    <sys:String x:Key="LatencyAverageFormat">直近 {0}/{1} ループ：エンドツーエンド {2:F1} ms；キャプチャ {3}、UI {4}、ROI {5}、OCR {6}、翻訳 {7}。</sys:String>
     <sys:String x:Key="StatusReady">設定を読み込みました。開始待ちです。</sys:String>
     <sys:String x:Key="StatusRunning">検出中：対象ウィンドウが前面にあるときだけオーバーレイを表示します。</sys:String>
     <sys:String x:Key="StatusStopped">検出を停止しました。</sys:String>

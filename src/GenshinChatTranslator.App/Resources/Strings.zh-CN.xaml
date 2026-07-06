@@ -39,8 +39,8 @@
     <sys:String x:Key="RecognitionSummaryNotChatInterface">目标窗口已找到；当前不是聊天界面；已跳过 ROI/OCR/翻译。</sys:String>
     <sys:String x:Key="RecognitionSummaryFailedFormat">检测失败：{0}</sys:String>
     <sys:String x:Key="RecognitionSummaryActiveFormat">聊天界面；ROI {0} 个；OCR {1}/{2}；翻译 {3}/{4}。</sys:String>
-    <sys:String x:Key="LatencyNoSamples">暂无完整翻译链路样本。</sys:String>
-    <sys:String x:Key="LatencyAverageFormat">最近 {0}/{1} 次：端到端 {2:F1} ms；截图 {3:F1} ms，界面 {4:F3} ms，ROI {5:F1} ms，OCR {6:F1} ms，翻译 {7:F1} ms。</sys:String>
+    <sys:String x:Key="LatencyNoSamples">暂无后台循环样本。</sys:String>
+    <sys:String x:Key="LatencyAverageFormat">最近 {0}/{1} 轮：端到端 {2:F1} ms；截图 {3}，界面 {4}，ROI {5}，OCR {6}，翻译 {7}。</sys:String>
     <sys:String x:Key="StatusReady">已加载配置，等待开始。</sys:String>
     <sys:String x:Key="StatusRunning">检测中：覆盖窗仅在目标窗口位于前台时显示。</sys:String>
     <sys:String x:Key="StatusStopped">检测已停止。</sys:String>

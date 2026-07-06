@@ -163,6 +163,25 @@ public sealed class RoiDetectionLoopService : IDisposable
 
     private async Task<TimeSpan> DetectOnceAsync(int generation, CancellationToken cancellationToken)
     {
+        var totalWatch = Stopwatch.StartNew();
+        double? captureElapsedMs = null;
+        double? chatGateElapsedMs = null;
+        double? roiElapsedMs = null;
+        double? ocrElapsedMs = null;
+        double? translationElapsedMs = null;
+
+        PipelineLatencyAverages AddLatencySample()
+        {
+            totalWatch.Stop();
+            return _latencyAverager.Add(new PipelineLatencySample(
+                totalWatch.Elapsed.TotalMilliseconds,
+                captureElapsedMs,
+                chatGateElapsedMs,
+                roiElapsedMs,
+                ocrElapsedMs,
+                translationElapsedMs));
+        }
+
         try
         {
             var window = _windowTracker.FindTargetWindow(_titleKeywords);
@@ -176,7 +195,7 @@ public sealed class RoiDetectionLoopService : IDisposable
                     TargetBackground: false,
                     ChatInterfaceMissing: false,
                     UnsupportedAspectWindow: null,
-                    LatencyAverages: _latencyAverager.Current,
+                    LatencyAverages: AddLatencySample(),
                     UpdatedAt: DateTime.Now), generation);
                 _lastTranslationSignature = null;
                 _lastTranslationResults = Array.Empty<ChatTranslationItem>();
@@ -193,7 +212,7 @@ public sealed class RoiDetectionLoopService : IDisposable
                     TargetBackground: true,
                     ChatInterfaceMissing: false,
                     UnsupportedAspectWindow: null,
-                    LatencyAverages: _latencyAverager.Current,
+                    LatencyAverages: AddLatencySample(),
                     UpdatedAt: DateTime.Now), generation);
                 _lastTranslationSignature = null;
                 _lastTranslationResults = Array.Empty<ChatTranslationItem>();
@@ -210,25 +229,27 @@ public sealed class RoiDetectionLoopService : IDisposable
                     TargetBackground: false,
                     ChatInterfaceMissing: false,
                     UnsupportedAspectWindow: window,
-                    LatencyAverages: _latencyAverager.Current,
+                    LatencyAverages: AddLatencySample(),
                     UpdatedAt: DateTime.Now), generation);
                 return _nonChatInterval;
             }
 
             cancellationToken.ThrowIfCancellationRequested();
-            var totalWatch = Stopwatch.StartNew();
             var captureWatch = Stopwatch.StartNew();
             var frame = _captureService.Capture(window);
             captureWatch.Stop();
+            captureElapsedMs = captureWatch.Elapsed.TotalMilliseconds;
             cancellationToken.ThrowIfCancellationRequested();
-            var chatGateWatch = Stopwatch.StartNew();
             var isChatInterface = true;
             if (!_skipChatUiGate)
             {
+                var chatGateWatch = Stopwatch.StartNew();
                 var chatUiGateResult = _chatUiGate.Detect(frame);
                 isChatInterface = chatUiGateResult.IsChatInterface;
+                chatGateWatch.Stop();
+                chatGateElapsedMs = chatGateWatch.Elapsed.TotalMilliseconds;
             }
-            chatGateWatch.Stop();
+
             if (!isChatInterface)
             {
                 Publish(new RoiDetectionLoopSnapshot(
@@ -239,7 +260,7 @@ public sealed class RoiDetectionLoopService : IDisposable
                     TargetBackground: false,
                     ChatInterfaceMissing: true,
                     UnsupportedAspectWindow: null,
-                    LatencyAverages: _latencyAverager.Current,
+                    LatencyAverages: AddLatencySample(),
                     UpdatedAt: DateTime.Now), generation);
                 return _nonChatInterval;
             }
@@ -247,12 +268,10 @@ public sealed class RoiDetectionLoopService : IDisposable
             var roiWatch = Stopwatch.StartNew();
             var (messageRoi, rois) = _roiDetector.Locate(frame);
             roiWatch.Stop();
+            roiElapsedMs = roiWatch.Elapsed.TotalMilliseconds;
             cancellationToken.ThrowIfCancellationRequested();
             IReadOnlyList<ChatOcrItem> ocrResults = Array.Empty<ChatOcrItem>();
             IReadOnlyList<ChatTranslationItem> translationResults = Array.Empty<ChatTranslationItem>();
-            var translationRequestSent = false;
-            var ocrElapsedMs = 0d;
-            var translationElapsedMs = 0d;
             if (rois.Count > 0)
             {
                 if (_translationPipeline.CanTranslateSelectedEnginePerItem)
@@ -260,37 +279,33 @@ public sealed class RoiDetectionLoopService : IDisposable
                     var run = await RecognizeAndTranslateSingleItemsAsync(frame, rois, cancellationToken).ConfigureAwait(false);
                     ocrResults = run.OcrResults;
                     translationResults = run.TranslationResults;
-                    translationRequestSent = run.RequestSent;
-                    ocrElapsedMs = run.OcrMs;
-                    translationElapsedMs = run.TranslationMs;
+                    ocrElapsedMs = run.OcrEngineInvoked ? run.OcrMs : null;
+                    translationElapsedMs = run.RequestSent ? run.TranslationMs : null;
                 }
                 else
                 {
                     var ocrWatch = Stopwatch.StartNew();
                     ocrResults = await _ocrPipeline.RecognizeAsync(frame, rois, cancellationToken).ConfigureAwait(false);
                     ocrWatch.Stop();
-                    ocrElapsedMs = ocrWatch.Elapsed.TotalMilliseconds;
+                    if (ocrResults.Any(item => !item.CacheHit))
+                    {
+                        ocrElapsedMs = ocrWatch.Elapsed.TotalMilliseconds;
+                    }
 
                     var translationWatch = Stopwatch.StartNew();
                     var translationRun = await TranslateOnlyWhenOcrTextChangedAsync(ocrResults, cancellationToken).ConfigureAwait(false);
                     translationWatch.Stop();
-                    translationElapsedMs = translationWatch.Elapsed.TotalMilliseconds;
+                    if (translationRun.RequestSent)
+                    {
+                        translationElapsedMs = translationWatch.Elapsed.TotalMilliseconds;
+                    }
+
                     translationResults = translationRun.Results;
-                    translationRequestSent = translationRun.RequestSent;
                 }
             }
 
             cancellationToken.ThrowIfCancellationRequested();
-            totalWatch.Stop();
-            var latencyAverages = translationRequestSent
-                ? _latencyAverager.Add(new PipelineLatencySample(
-                    totalWatch.Elapsed.TotalMilliseconds,
-                    captureWatch.Elapsed.TotalMilliseconds,
-                    chatGateWatch.Elapsed.TotalMilliseconds,
-                    roiWatch.Elapsed.TotalMilliseconds,
-                    ocrElapsedMs,
-                    translationElapsedMs))
-                : _latencyAverager.Current;
+            var latencyAverages = AddLatencySample();
 
             Publish(new RoiDetectionLoopSnapshot(
                 IsRunning: true,
@@ -326,7 +341,7 @@ public sealed class RoiDetectionLoopService : IDisposable
                 TargetBackground: false,
                 ChatInterfaceMissing: false,
                 UnsupportedAspectWindow: null,
-                LatencyAverages: _latencyAverager.Current,
+                LatencyAverages: AddLatencySample(),
                 UpdatedAt: DateTime.Now), generation);
             return _nonChatInterval;
         }
@@ -380,6 +395,7 @@ public sealed class RoiDetectionLoopService : IDisposable
             translationResults,
             requestSent,
             ElapsedMilliseconds(ocrStartTimestamp, ocrEndTimestamp),
+            ocrResults.Any(item => !item.CacheHit),
             translationMs);
     }
 
@@ -489,6 +505,7 @@ public sealed class RoiDetectionLoopService : IDisposable
         IReadOnlyList<ChatTranslationItem> TranslationResults,
         bool RequestSent,
         double OcrMs,
+        bool OcrEngineInvoked,
         double TranslationMs);
 
     private sealed record TimestampedTranslationBatch(

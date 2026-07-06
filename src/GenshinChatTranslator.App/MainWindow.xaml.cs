@@ -732,11 +732,18 @@ public partial class MainWindow : Window
                 latencyAverages.Count,
                 latencyAverages.Capacity,
                 latencyAverages.EndToEndMs,
-                latencyAverages.CaptureMs,
-                latencyAverages.ChatGateMs,
-                latencyAverages.RoiMs,
-                latencyAverages.OcrMs,
-                latencyAverages.TranslationMs);
+                FormatLatencyStage(latencyAverages.CaptureMs, "F1"),
+                FormatLatencyStage(latencyAverages.ChatGateMs, "F3"),
+                FormatLatencyStage(latencyAverages.RoiMs, "F1"),
+                FormatLatencyStage(latencyAverages.OcrMs, "F1"),
+                FormatLatencyStage(latencyAverages.TranslationMs, "F1"));
+    }
+
+    private static string FormatLatencyStage(double? milliseconds, string format)
+    {
+        return milliseconds.HasValue
+            ? $"{milliseconds.Value.ToString(format, CultureInfo.CurrentCulture)} ms"
+            : "-";
     }
 
     private void ApplyDebugMode()
