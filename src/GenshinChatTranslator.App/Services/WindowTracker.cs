@@ -1,4 +1,5 @@
 using System.Text;
+using System.Runtime.InteropServices;
 using GenshinChatTranslator.App.Models;
 using GenshinChatTranslator.App.Win32;
 
@@ -17,7 +18,7 @@ public sealed class WindowTracker
 
         NativeMethods.EnumWindows((hwnd, _) =>
         {
-            if (result is not null || !NativeMethods.IsWindowVisible(hwnd) || NativeMethods.IsIconic(hwnd))
+            if (result is not null || !NativeMethods.IsWindowVisible(hwnd) || IsMinimized(hwnd))
             {
                 return true;
             }
@@ -58,6 +59,11 @@ public sealed class WindowTracker
         return NativeMethods.GetForegroundWindow();
     }
 
+    public bool IsForegroundWindow(WindowInfo window)
+    {
+        return GetForegroundWindow() == window.Hwnd;
+    }
+
     private static string GetWindowTitle(IntPtr hwnd)
     {
         var length = NativeMethods.GetWindowTextLengthW(hwnd);
@@ -87,5 +93,20 @@ public sealed class WindowTracker
         var width = rect.Right - rect.Left;
         var height = rect.Bottom - rect.Top;
         return new ScreenBox(point.X, point.Y, point.X + width, point.Y + height);
+    }
+
+    private static bool IsMinimized(IntPtr hwnd)
+    {
+        if (NativeMethods.IsIconic(hwnd))
+        {
+            return true;
+        }
+
+        var placement = new NativeMethods.WindowPlacement
+        {
+            Length = Marshal.SizeOf<NativeMethods.WindowPlacement>(),
+        };
+        return NativeMethods.GetWindowPlacement(hwnd, ref placement) &&
+            placement.ShowCmd == NativeMethods.SwShowMinimized;
     }
 }

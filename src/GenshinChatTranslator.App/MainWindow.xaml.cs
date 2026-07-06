@@ -453,6 +453,11 @@ public partial class MainWindow : Window
             return true;
         }
 
+        if (!_windowTracker.IsForegroundWindow(window))
+        {
+            return true;
+        }
+
         var width = window.ClientBox.Width;
         var height = window.ClientBox.Height;
         if (IsSupportedAspectRatio(width, height))
@@ -553,6 +558,16 @@ public partial class MainWindow : Window
             RecognitionSummaryTextBlock.Text = LocalizationManager.Text("RecognitionSummaryNoTarget");
             UpdateLatencyText(snapshot.LatencyAverages);
             SetStatus(LocalizationManager.Text("StatusNoTarget"));
+            return;
+        }
+
+        if (snapshot.TargetBackground)
+        {
+            _overlayWindow?.Hide();
+            _lastRenderedSnapshotAt = DateTime.MinValue;
+            RecognitionSummaryTextBlock.Text = LocalizationManager.Text("RecognitionSummaryWaiting");
+            UpdateLatencyText(snapshot.LatencyAverages);
+            SetStatus(LocalizationManager.Text("StatusBackground"));
             return;
         }
 

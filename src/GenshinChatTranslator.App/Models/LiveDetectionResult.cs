@@ -18,6 +18,7 @@ public sealed record RoiDetectionLoopSnapshot(
     LiveDetectionResult? Result,
     string? ErrorMessage,
     bool TargetMissing,
+    bool TargetBackground,
     bool ChatInterfaceMissing,
     WindowInfo? UnsupportedAspectWindow,
     PipelineLatencyAverages? LatencyAverages,

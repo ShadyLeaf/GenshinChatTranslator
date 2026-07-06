@@ -13,6 +13,7 @@ internal static class NativeMethods
     public const uint SwpNoActivate = 0x0010;
     public const uint SwpShowWindow = 0x0040;
     public const int SwHide = 0;
+    public const int SwShowMinimized = 2;
     public const int SwShownoactivate = 4;
     public const int Srccopy = 0x00CC0020;
     public const uint DibRgbColors = 0;
@@ -33,6 +34,9 @@ internal static class NativeMethods
 
     [DllImport("user32.dll")]
     public static extern bool IsIconic(IntPtr hwnd);
+
+    [DllImport("user32.dll")]
+    public static extern bool GetWindowPlacement(IntPtr hwnd, ref WindowPlacement placement);
 
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
     public static extern int GetWindowTextLengthW(IntPtr hwnd);
@@ -159,6 +163,17 @@ internal static class NativeMethods
             X = x;
             Y = y;
         }
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct WindowPlacement
+    {
+        public int Length;
+        public int Flags;
+        public int ShowCmd;
+        public Point MinPosition;
+        public Point MaxPosition;
+        public Rect NormalPosition;
     }
 
     [StructLayout(LayoutKind.Sequential)]

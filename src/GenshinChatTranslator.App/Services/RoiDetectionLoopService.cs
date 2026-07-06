@@ -35,6 +35,7 @@ public sealed class RoiDetectionLoopService : IDisposable
         Result: null,
         ErrorMessage: null,
         TargetMissing: false,
+        TargetBackground: false,
         ChatInterfaceMissing: false,
         UnsupportedAspectWindow: null,
         LatencyAverages: null,
@@ -87,6 +88,7 @@ public sealed class RoiDetectionLoopService : IDisposable
                 Result: null,
                 ErrorMessage: null,
                 TargetMissing: false,
+                TargetBackground: false,
                 ChatInterfaceMissing: false,
                 UnsupportedAspectWindow: null,
                 LatencyAverages: null,
@@ -166,6 +168,24 @@ public sealed class RoiDetectionLoopService : IDisposable
                     Result: null,
                     ErrorMessage: null,
                     TargetMissing: true,
+                    TargetBackground: false,
+                    ChatInterfaceMissing: false,
+                    UnsupportedAspectWindow: null,
+                    LatencyAverages: _latencyAverager.Current,
+                    UpdatedAt: DateTime.Now), generation);
+                _lastTranslationSignature = null;
+                _lastTranslationResults = Array.Empty<ChatTranslationItem>();
+                return _nonChatInterval;
+            }
+
+            if (!_windowTracker.IsForegroundWindow(window))
+            {
+                Publish(new RoiDetectionLoopSnapshot(
+                    IsRunning: true,
+                    Result: null,
+                    ErrorMessage: null,
+                    TargetMissing: false,
+                    TargetBackground: true,
                     ChatInterfaceMissing: false,
                     UnsupportedAspectWindow: null,
                     LatencyAverages: _latencyAverager.Current,
@@ -182,6 +202,7 @@ public sealed class RoiDetectionLoopService : IDisposable
                     Result: null,
                     ErrorMessage: null,
                     TargetMissing: false,
+                    TargetBackground: false,
                     ChatInterfaceMissing: false,
                     UnsupportedAspectWindow: window,
                     LatencyAverages: _latencyAverager.Current,
@@ -210,6 +231,7 @@ public sealed class RoiDetectionLoopService : IDisposable
                     Result: null,
                     ErrorMessage: null,
                     TargetMissing: false,
+                    TargetBackground: false,
                     ChatInterfaceMissing: true,
                     UnsupportedAspectWindow: null,
                     LatencyAverages: _latencyAverager.Current,
@@ -278,6 +300,7 @@ public sealed class RoiDetectionLoopService : IDisposable
                     DateTime.Now),
                 ErrorMessage: null,
                 TargetMissing: false,
+                TargetBackground: false,
                 ChatInterfaceMissing: false,
                 UnsupportedAspectWindow: null,
                 LatencyAverages: latencyAverages,
@@ -295,6 +318,7 @@ public sealed class RoiDetectionLoopService : IDisposable
                 Result: null,
                 ErrorMessage: ex.Message,
                 TargetMissing: false,
+                TargetBackground: false,
                 ChatInterfaceMissing: false,
                 UnsupportedAspectWindow: null,
                 LatencyAverages: _latencyAverager.Current,
