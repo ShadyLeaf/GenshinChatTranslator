@@ -15,6 +15,9 @@
     <sys:String x:Key="OcrEngineLabel">OCR engine</sys:String>
     <sys:String x:Key="TranslationEngineLabel">Translator</sys:String>
     <sys:String x:Key="ConfigureLlmButton">Configure LLM</sys:String>
+    <sys:String x:Key="AutoFixWin11BitBltLabel">Automatically disable Windows 11 windowed optimizations for BitBlt</sys:String>
+    <sys:String x:Key="AutoFixWin11BitBltHint">Restart the game after changing this setting</sys:String>
+    <sys:String x:Key="ManualGraphicsSettingsButton">Manual setup</sys:String>
     <sys:String x:Key="TranslationTargetLanguageLabel">Target</sys:String>
     <sys:String x:Key="TargetLabel">Target window</sys:String>
     <sys:String x:Key="CaptureLabel">Capture status</sys:String>

@@ -17,6 +17,8 @@ public sealed class UserPreferences
 
     public string? TranslationTargetLanguage { get; set; }
 
+    public bool AutoFixWin11BitBlt { get; set; } = true;
+
     public static UserPreferences Empty { get; } = new();
 
     public CultureInfo? GetUiCulture()

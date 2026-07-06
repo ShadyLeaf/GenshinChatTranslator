@@ -20,6 +20,19 @@ Genshin Chat Translator is an unofficial Windows desktop tool that recognizes te
 - Input layouts: keyboard/mouse, Xbox controller, and DualSense controller layouts.
 - OCR: release packages usually include WeChat OCR and PaddleOCR runtime/model binaries. These binaries are not stored in the source repository.
 
+## Windows 11 BitBlt Compatibility Fix
+
+This app captures the game window with BitBlt. Windows 11 windowed optimizations can make BitBlt return black frames or stale frames, so the app enables "Automatically disable Windows 11 windowed optimizations for BitBlt" by default.
+
+The option writes this per-user DirectX preference:
+
+```text
+HKCU\Software\Microsoft\DirectX\UserGpuPreferences
+DirectXUserGlobalSettings = SwapEffectUpgradeEnable=0;
+```
+
+If the game is already running when you change this option, restart the game for it to take effect. Turning the option off only stops future automatic writes; use the app's "Manual setup" button to open Windows advanced graphics settings if you want to restore the Windows graphics preference manually.
+
 ## Limitations
 
 - This is a personal-use prototype. It is not guaranteed to work reliably across all resolutions, UI scales, filters, language combinations, or game versions.

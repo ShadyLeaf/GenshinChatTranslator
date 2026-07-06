@@ -15,6 +15,9 @@
     <sys:String x:Key="OcrEngineLabel">OCR 方式</sys:String>
     <sys:String x:Key="TranslationEngineLabel">翻译方式</sys:String>
     <sys:String x:Key="ConfigureLlmButton">配置 LLM</sys:String>
+    <sys:String x:Key="AutoFixWin11BitBltLabel">自动关闭 Windows 11 窗口化优化以支持 BitBlt</sys:String>
+    <sys:String x:Key="AutoFixWin11BitBltHint">修改设置后重启游戏生效</sys:String>
+    <sys:String x:Key="ManualGraphicsSettingsButton">手动设置</sys:String>
     <sys:String x:Key="TranslationTargetLanguageLabel">目标语言</sys:String>
     <sys:String x:Key="TargetLabel">目标窗口</sys:String>
     <sys:String x:Key="CaptureLabel">截图状态</sys:String>

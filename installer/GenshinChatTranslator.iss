@@ -1,4 +1,4 @@
-#define DefaultAppVersion "0.1.0"
+#define DefaultAppVersion "0.1.1"
 #define DefaultSourceDir "..\artifacts\package\publish"
 #define DefaultOutputDir "..\artifacts\package\installer"
 #define DefaultSetupIconFile "..\src\GenshinChatTranslator.App\Assets\logo.ico"

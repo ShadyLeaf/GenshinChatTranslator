@@ -15,6 +15,9 @@
     <sys:String x:Key="OcrEngineLabel">OCR 方式</sys:String>
     <sys:String x:Key="TranslationEngineLabel">翻訳方式</sys:String>
     <sys:String x:Key="ConfigureLlmButton">LLM 設定</sys:String>
+    <sys:String x:Key="AutoFixWin11BitBltLabel">BitBlt のため Windows 11 のウィンドウ最適化を自動的に無効化</sys:String>
+    <sys:String x:Key="AutoFixWin11BitBltHint">設定を変更した後はゲームを再起動してください</sys:String>
+    <sys:String x:Key="ManualGraphicsSettingsButton">手動設定</sys:String>
     <sys:String x:Key="TranslationTargetLanguageLabel">翻訳先</sys:String>
     <sys:String x:Key="TargetLabel">対象ウィンドウ</sys:String>
     <sys:String x:Key="CaptureLabel">キャプチャ状態</sys:String>

@@ -93,6 +93,17 @@ public partial class MainWindow : Window
             _detectionLoop = new RoiDetectionLoopService(DefaultTitleKeywords, _roiConfig, _ocrPipeline, _translationPipeline);
             _overlayWindow = new OverlayWindow();
             DebugModeCheckBox.IsChecked = _isDebugMode;
+            _isRefreshingLocalizedChoices = true;
+            try
+            {
+                AutoFixWin11BitBltCheckBox.IsChecked = _preferences.AutoFixWin11BitBlt;
+            }
+            finally
+            {
+                _isRefreshingLocalizedChoices = false;
+            }
+
+            ApplyWin11BitBltFixIfEnabled();
             ApplyDebugMode();
             ApplyCultureButtonState();
 
@@ -233,6 +244,26 @@ public partial class MainWindow : Window
         ApplyDebugMode();
         _lastRenderedSnapshotAt = DateTime.MinValue;
         RefreshOverlay();
+    }
+
+    private void AutoFixWin11BitBltCheckBox_CheckedChanged(object sender, RoutedEventArgs e)
+    {
+        if (_isRefreshingLocalizedChoices)
+        {
+            return;
+        }
+
+        _preferences.AutoFixWin11BitBlt = AutoFixWin11BitBltCheckBox.IsChecked == true;
+        SaveUserPreferences();
+        ApplyWin11BitBltFixIfEnabled();
+    }
+
+    private void OpenDisplayAdvancedGraphicsSettingsButton_Click(object sender, RoutedEventArgs e)
+    {
+        Process.Start(new ProcessStartInfo("ms-settings:display-advancedgraphics")
+        {
+            UseShellExecute = true,
+        });
     }
 
     private void LanguageButton_Click(object sender, RoutedEventArgs e)
@@ -403,6 +434,7 @@ public partial class MainWindow : Window
         }
 
         _isRunning = true;
+        ApplyWin11BitBltFixIfEnabled();
         ToggleButton.Content = LocalizationManager.Text("StopButton");
         RecognitionSummaryTextBlock.Text = LocalizationManager.Text("RecognitionSummaryWaiting");
         UpdateLatencyText(null);
@@ -751,6 +783,8 @@ public partial class MainWindow : Window
             _preferences.TranslationTargetLanguage = _translationPipeline.TargetLanguage.ToString();
         }
 
+        _preferences.AutoFixWin11BitBlt = AutoFixWin11BitBltCheckBox.IsChecked == true;
+
         try
         {
             UserPreferencesStore.Save(_preferences);
@@ -758,6 +792,14 @@ public partial class MainWindow : Window
         catch
         {
             // Preferences are a convenience layer; runtime choices still apply in memory if saving fails.
+        }
+    }
+
+    private void ApplyWin11BitBltFixIfEnabled()
+    {
+        if (_preferences.AutoFixWin11BitBlt && OperatingSystem.IsWindowsVersionAtLeast(10, 0, 22000))
+        {
+            BitBltRegistryHelper.SetDirectXUserGlobalSettings();
         }
     }
 
