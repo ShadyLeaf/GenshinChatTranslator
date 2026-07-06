@@ -93,7 +93,8 @@ public sealed class OverlayWindow : Window
 
             if (!string.IsNullOrWhiteSpace(displayText))
             {
-                AddOverlayText(textBox, displayText, color, overlayScale, textVerticalShift);
+                var alignRight = roi.Kind == ChatRoiDetector.SelfLightKind;
+                AddOverlayText(textBox, displayText, color, overlayScale, textVerticalShift, alignRight);
             }
         }
 
@@ -127,7 +128,7 @@ public sealed class OverlayWindow : Window
         return string.IsNullOrWhiteSpace(ocrText) ? null : ocrText;
     }
 
-    private void AddOverlayText(Rect box, string text, Color accent, double overlayScale, double verticalShift)
+    private void AddOverlayText(Rect box, string text, Color accent, double overlayScale, double verticalShift, bool alignRight)
     {
         var border = new Border
         {
@@ -146,7 +147,15 @@ public sealed class OverlayWindow : Window
                 MaxWidth = OverlayTextBaseMaxWidth * overlayScale,
             },
         };
-        Canvas.SetLeft(border, box.Left);
+        if (alignRight)
+        {
+            Canvas.SetRight(border, Math.Max(0, _canvas.Width - box.Right));
+        }
+        else
+        {
+            Canvas.SetLeft(border, box.Left);
+        }
+
         Canvas.SetTop(border, Math.Max(0, box.Bottom + 4 - verticalShift));
         _canvas.Children.Add(border);
     }
