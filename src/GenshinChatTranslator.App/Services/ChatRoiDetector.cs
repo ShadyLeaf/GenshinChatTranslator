@@ -80,7 +80,8 @@ public sealed class ChatRoiDetector
             }
         }
 
-        var uniqueRois = SuppressDuplicateRois(rois);
+        var mergedRois = MergeSplitMultilineRois(rois);
+        var uniqueRois = SuppressDuplicateRois(mergedRois);
         uniqueRois.Sort((left, right) =>
         {
             var topCompare = left.BubbleBox.Top.CompareTo(right.BubbleBox.Top);
@@ -511,6 +512,86 @@ public sealed class ChatRoiDetector
         }
 
         return kept;
+    }
+
+    private List<ChatBubbleRoi> MergeSplitMultilineRois(IEnumerable<ChatBubbleRoi> rois)
+    {
+        var source = rois
+            .OrderBy(item => item.BubbleBox.Top)
+            .ThenBy(item => item.BubbleBox.Left)
+            .ToList();
+        if (source.Count < 2)
+        {
+            return source;
+        }
+
+        var merged = new List<ChatBubbleRoi>();
+        foreach (var roi in source)
+        {
+            var targetIndex = merged.FindIndex(existing => ShouldMergeSplitMultilineRoi(existing, roi));
+            if (targetIndex < 0)
+            {
+                merged.Add(roi);
+                continue;
+            }
+
+            merged[targetIndex] = MergeRois(merged[targetIndex], roi);
+        }
+
+        return merged;
+    }
+
+    private bool ShouldMergeSplitMultilineRoi(ChatBubbleRoi left, ChatBubbleRoi right)
+    {
+        if (left.Kind != right.Kind || left.Kind != OtherDarkKind)
+        {
+            return false;
+        }
+
+        var combined = Union(left.BubbleBox, right.BubbleBox);
+        if (combined.Height > _config.CandidateFilter.MaxHeight)
+        {
+            return false;
+        }
+
+        var verticalOverlap = AxisOverlap(left.BubbleBox.Top, left.BubbleBox.Bottom, right.BubbleBox.Top, right.BubbleBox.Bottom);
+        var minHeight = Math.Max(1, Math.Min(left.BubbleBox.Height, right.BubbleBox.Height));
+        if (verticalOverlap / (double)minHeight < 0.35)
+        {
+            return false;
+        }
+
+        var horizontalOverlap = AxisOverlap(left.BubbleBox.Left, left.BubbleBox.Right, right.BubbleBox.Left, right.BubbleBox.Right);
+        var minWidth = Math.Max(1, Math.Min(left.BubbleBox.Width, right.BubbleBox.Width));
+        if (horizontalOverlap / (double)minWidth < 0.65)
+        {
+            return false;
+        }
+
+        return Math.Abs(left.BubbleBox.Left - right.BubbleBox.Left) <= _config.TextSeedFallback.PaddingLeft;
+    }
+
+    private static ChatBubbleRoi MergeRois(ChatBubbleRoi left, ChatBubbleRoi right)
+    {
+        return new ChatBubbleRoi(
+            left.Kind,
+            Union(left.BubbleBox, right.BubbleBox),
+            Union(left.TextBox, right.TextBox),
+            Math.Max(left.Confidence, right.Confidence));
+    }
+
+    private static ScreenBox Union(ScreenBox left, ScreenBox right)
+    {
+        return new ScreenBox(
+            Math.Min(left.Left, right.Left),
+            Math.Min(left.Top, right.Top),
+            Math.Max(left.Right, right.Right),
+            Math.Max(left.Bottom, right.Bottom));
+    }
+
+    private static int AxisOverlap(int leftStart, int leftEnd, int rightStart, int rightEnd)
+    {
+        return Math.Max(0, Math.Min(leftEnd, rightEnd) - Math.Max(leftStart, rightStart));
     }
 
     private static int OverlapArea(ScreenBox left, ScreenBox right)

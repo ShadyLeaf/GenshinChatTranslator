@@ -89,7 +89,7 @@ text_seed_fallback:
   short_text_width_threshold: 80
   short_text_max_fill_ratio: 0.60
   # 行聚类允许的最大纵向间隔，单位为原始截图像素。
-  max_row_gap: 14
+  max_row_gap: 18
   # 按正文精确文字色外接框向外扩张生成局部气泡候选。
   padding_left: 64
   padding_right: 80
